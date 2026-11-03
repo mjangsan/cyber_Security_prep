@@ -1,0 +1,114 @@
+lab 1:
+
+
+=====================================================================================================================================================================================
+lab 2:
+
+
+=====================================================================================================================================================================================
+lab 3: Server side param pollution in query string
+
+target : Internal Api's
+
+internal api's are not accessible directly via internet
+
+server has to request for data, if these api's are not handle the encoding response properly the applications can be exploitable (the param can be access via user input and these inputs xould be vulnerable)
+
+# PortSwigger Lab – Server-Side Parameter Pollution
+
+**Goal:** Delete the user account (Carlos).
+
+### 1. Initial investigation
+- Tried accessing the admin page directly using `/admin`, but access was restricted.
+- Explored the application's features and observed the requests and responses using Burp Suite.
+- On the login page, tried logging in as `administrator` with a random password. The application returned an invalid credentials error.
+- Found another link called **Forgot password?**
+- The password reset functionality asked for a username. After submitting `administrator`, the application revealed a partially masked email address.
+- Inspected the page source code and found the password reset endpoint and its query parameter:
+
+```javascript
+/forgot_password?reset_token=${token}
+```
+
+### 2. Identifying the unknown information
+
+My goal was to retrieve the reset token sent to the administrator's email.
+
+The unknown information was:
+- Administrator's complete email address.
+- Password reset token.
+- Administrator's password.
+
+**Restriction:** I didn't have access to the administrator's email inbox.
+
+### 3. Investigating the forgot-password endpoint
+
+- Identified a POST request to the `/forgot_password` endpoint.
+- Changed the HTTP method to `OPTIONS` to check which methods were allowed. The response revealed that GET and POST were supported.
+- Tried using GET because I wanted to retrieve the reset token, but the operation worked only with POST.
+- Carefully examined the endpoint's response and error messages to understand how the server processed the input.
+
+The endpoint returned:
+
+```json
+{
+    "result": "*****@normal-user.net",
+    "type": "email"
+}
+```
+
+- Identified that this endpoint was vulnerable to **Server-Side Parameter Pollution (SSPP)**.
+
+### 4. Testing server-side parameter pollution
+
+- Tried submitting `administrator` as the username. This confirmed that the application validated the username and returned an invalid username error when an incorrect username was provided.
+- Tried adding an additional `&` character, but it did not produce the expected result.
+- Tried URL-encoding the `&` character:
+
+```text
+administrator%26
+```
+
+- The application returned a **Parameter is not supported** error.
+- This suggested that the encoded character was being interpreted as a parameter separator in the server-side request, allowing me to introduce an additional parameter.
+
+### 5. Discovering the field parameter
+
+- Initially tried guessing parameter names such as `reset_token`, `email`, and `password` manually. These attempts failed because the expected parameter structure had not yet been identified.
+- Based on the error messages, investigated whether the internal API expected another parameter.
+- Tried injecting a `field` parameter with an invalid value:
+
+```text
+username=administrator%26field=x%23
+```
+
+- The application returned an **Invalid field** error.
+- This confirmed that the internal API recognized the injected `field` parameter but did not accept the value `x`.
+
+### 6. Discovering the supported field values
+
+- Realized that guessing the parameter values manually was inefficient.
+- Used brute-forcing to identify the supported values for the `field` parameter.
+- During brute-forcing, noticed that the values `username` and `email` returned HTTP 200 responses.
+- Changed the field value to `email` and confirmed that the application returned the original email response.
+
+### 7. Retrieving the reset token
+
+- From my earlier source-code analysis, I already knew that the password reset functionality used a parameter called `reset_token`.
+- Since the `field` parameter allowed me to control which information the internal API returned, I tried:
+
+```text
+username=administrator%26field=reset_token%23
+```
+
+- This attempt succeeded, and the application returned the password reset token.
+
+### 8. Completing the lab
+
+- Used the retrieved reset token with the password reset endpoint.
+- Set a new password for the administrator account.
+- Logged in as administrator using the new password.
+- Accessed the Admin panel and deleted Carlos.
+
+
+=====================================================================================================================================================================================
