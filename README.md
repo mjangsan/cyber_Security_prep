@@ -1,149 +1,198 @@
-# Security Research & Notes
+# Application Security Research & Hands-on Labs
 
-> Transitioning from 5+ years Automation SDET → Application Security.  
-> This repo documents my hands-on learning — labs, CVE analysis, tools I build, and code review practice.
+> Transitioning from 5+ years of Software Test Automation Engineering to Application Security and Security Research.  
+> Exploring automated Web/API security testing, vulnerability analysis, and security-oriented software testing.
 
 ---
 
 ## About Me
 
-I spent 5 years building test automation frameworks — Selenium, Playwright, Python, Jenkins, API testing.  
-I'm now applying that scripting and systematic thinking to web application security.
+I have 5+ years of professional experience in Software Quality Engineering and Test Automation, working with Selenium, Java, TestNG, REST API automation, and Playwright.
 
-**Current focus:** Web app pentesting, source code review, OSWE preparation  
-**Background:** Automation SDET → AppSec transition  
-**Certifications in progress:** OSWE (OffSec Web Expert)
+My experience building automation frameworks and testing complex application workflows has motivated my transition into Application Security.
+
+I am now applying my software testing, scripting, and analytical skills to understand how web applications and APIs fail from a security perspective.
+
+**Current focus:**
+- Web Application Security
+- REST API Security Testing
+- Authentication and Authorization Vulnerabilities
+- BOLA / IDOR and Business Logic Flaws
+- Source Code Security Analysis
+- Automated Security Testing
+
+**Research interest:** Evaluating automated Web/API security testing approaches, including their ability to identify vulnerabilities across authentication, authorization, and application workflows.
+
+**Long-term goal:** Master's research in Application Security and a career in cybersecurity.
 
 ---
 
-## What's in This Repo
+## Technical Background
 
+| Area | Technologies / Skills |
+|---|---|
+| Test Automation | Selenium, Playwright, Appium |
+| Programming | Java, Python |
+| Test Frameworks | TestNG, Maven |
+| API Testing | REST Assured, Postman |
+| Security Testing | Burp Suite, OWASP ZAP (learning) |
+| Vulnerable Environments | DVWA, VAmPI, crAPI |
+| Security Research | PortSwigger Web Security Academy, vulnerability analysis |
+| Development Tools | Git, GitHub, Docker, Jenkins |
+
+---
+
+## Security Learning & Hands-on Practice
+
+This repository documents practical security exercises, vulnerability investigations, and technical observations.
+
+### 1. Web Application Security
+
+Working through practical vulnerabilities using PortSwigger Web Security Academy and intentionally vulnerable applications.
+
+Topics explored:
+- SQL Injection
+- Cross-Site Scripting (XSS)
+- Authentication vulnerabilities
+- Username enumeration
+- Password reset vulnerabilities
+- Server-Side Request Forgery (SSRF)
+- Access Control vulnerabilities
+- File Upload vulnerabilities
+- Command Injection
+
+### 2. API Security
+
+Hands-on investigation of REST API security using vulnerable applications and security testing tools.
+
+Current areas of exploration:
+- API authentication mechanisms
+- JWT security and validation
+- Broken Object Level Authorization (BOLA)
+- IDOR vulnerabilities
+- Authorization testing
+- API information disclosure
+- Multi-user and workflow-based testing
+- Business logic vulnerabilities
+
+### 3. Source Code Security Review
+
+Practising the identification of vulnerabilities through source code analysis.
+
+Focus areas:
+- Understanding vulnerable code paths
+- Identifying missing input validation
+- Tracing user-controlled input
+- Understanding authentication and authorization checks
+- Connecting source code weaknesses to observable security behaviour
+- Analysing potential fixes and secure implementation approaches
+
+---
+
+## Security Research
+
+### Research Direction: Automated Web/API Security Testing
+
+My research interest lies in understanding how effectively automated security testing approaches identify vulnerabilities in modern web applications and REST APIs.
+
+Areas I am investigating:
+
+- Vulnerability detection capabilities of automated security testing tools.
+- Limitations of automated testing approaches.
+- Authentication and authorization testing.
+- Stateful application workflows.
+- Multi-user security testing.
+- Security oracles and vulnerability verification.
+- Reproducibility and evaluation of security testing results.
+
+**Current research baseline:** Empirical evaluation of automated Web API security testing approaches.
+
+I am also investigating whether existing approaches adequately handle authorization behaviour across application state transitions.
+
+---
+
+## Hands-on Environments & Tools
+
+| Tool / Environment | Purpose |
+|---|---|
+| PortSwigger Web Security Academy | Practical web vulnerability labs |
+| DVWA | PHP source code analysis and vulnerability reproduction |
+| VAmPI | REST API security testing |
+| crAPI | API security testing and vulnerability investigation |
+| Burp Suite Community | HTTP interception, request manipulation and security testing |
+| Postman | API request construction and testing |
+| Docker | Running vulnerable applications and lab environments |
+
+---
+
+## Automation to Application Security
+
+My previous professional experience provides a strong foundation for security testing.
+
+| Previous experience | Application in security |
+|---|---|
+| Selenium and Playwright | Automated security test execution |
+| Java and TestNG | Structured test development |
+| REST Assured | REST API security testing |
+| API automation frameworks | Authentication and authorization testing |
+| Workflow automation | Multi-step security testing |
+| Bug reproduction and reporting | Vulnerability reproduction and documentation |
+| Jenkins and CI/CD | Potential security testing integration |
+
+I approach security testing with the same systematic mindset used in software quality engineering: understand the expected behaviour, identify unexpected behaviour, reproduce it, and investigate the underlying cause.
+
+---
+
+## Repository Structure
+
+```text
+security-research/
+│
+├── portswigger/
+│   ├── authentication/
+│   ├── sqli/
+│   ├── xss/
+│   ├── ssrf/
+│   └── access-control/
+│
+├── api-security/
+│   ├── authentication/
+│   ├── jwt/
+│   ├── bola-idor/
+│   └── business-logic/
+│
+├── source-code-review/
+│   ├── dvwa/
+│   └── vulnerability-analysis/
+│
+├── research/
+│   ├── paper-notes/
+│   ├── tool-comparison/
+│   └── research-observations/
+│
+├── tools/
+│
+└── writeups/
 ```
-security-notes/
-│
-├── portswigger/          # Lab notes — what I learned, not just solutions
-│   ├── sqli.md
-│   ├── xss.md
-│   ├── ssrf.md
-│   └── ...
-│
-├── dvwa/                 # DVWA source code analysis — PHP code review practice
-│   ├── dvwa-sqli-low.md
-│   ├── dvwa-xss-low.md
-│   └── ...
-│
-├── cve-analysis/         # Real vulnerability breakdowns — code to exploit
-│   ├── cve-analysis-01.md
-│   ├── cve-analysis-02.md
-│   └── ...
-│
-├── tools/                # Scripts I built — automation background applied to security
-│   ├── web-vuln-checker/ # OWASP Top 10 automated checker (Python)
-│   └── ...
-│
-└── writeups/             # CTF and HTB machine writeups
-    └── ...
-```
 
 ---
 
-## Tools I Built
+## Current Learning Priorities
 
-### web-vuln-checker
-A Python CLI tool that checks a target URL for common web vulnerabilities.
-
-**Checks:**
-- SQL injection (error-based detection)
-- Reflected XSS (unencoded reflection detection)
-- Command injection
-- Missing security headers (CSP, X-Frame-Options, etc.)
-- Basic IDOR detection (sequential ID enumeration)
-
-**Built using:** Python, requests, argparse  
-**Why I built it:** Direct transfer from my automation SDET background — same logic as a test framework, different payloads.
-
-```bash
-python checker.py --url http://target.com --check sqli,xss,headers
-```
-
-> More tools added as I learn — each one solves a real testing problem.
-
----
-
-## CVE Analysis
-
-I read real vulnerability writeups and break down exactly what was vulnerable in the source code and why.
-
-| # | CVE | Type | Language | Key finding |
-|---|-----|------|----------|-------------|
-| 01 | [CVE-XXXX-XXXXX] | [SQLi / XSS / RCE] | PHP | [One line: what was the vulnerable function] |
-| 02 | [CVE-XXXX-XXXXX] | [type] | Python | [One line summary] |
-
-> Format for each: vulnerable code → why it's dangerous → what the fix looks like
-
----
-
-## PortSwigger Progress
-
-Tracking completion across all modules relevant to OSWE and bug bounty.
-
-| Module | Status | Key takeaway |
-|--------|--------|--------------|
-| SQL Injection | ✅ Complete | Blind time-based, union-based, filter bypass |
-| Authentication | ✅ Complete | MFA bypass, password reset flaws, brute force |
-| XSS | ✅ Complete | DOM-based, CSP bypass, event handler injection |
-| SSRF | 🔄 In progress | Internal service access, blind SSRF via OOB |
-| XXE | 🔄 In progress | File read, SSRF via XXE, blind OOB |
-| Access Control | ⬜ Upcoming | — |
-| Business Logic | ⬜ Upcoming | — |
-| File Upload | ⬜ Upcoming | — |
-| SSTI | ⬜ Upcoming | — |
-| Deserialization | ⬜ Upcoming | — |
-| CORS | ⬜ Upcoming | — |
-| OAuth / JWT | ⬜ Upcoming | — |
-| GraphQL | ⬜ Upcoming | — |
-| Prototype Pollution | ⬜ Upcoming | — |
-
----
-
-## DVWA Source Code Review Log
-
-Practising the OSWE core skill: read the code, find the vulnerability **before** testing it.
-
-| Page | Security level | Vulnerability found | Vulnerable function |
-|------|---------------|---------------------|----------------------|
-| SQL Injection | Low | SQLi | `$query = "...WHERE id='$id'"` |
-| SQL Injection | Medium | Partial bypass | `mysqli_real_escape_string` — numeric bypass |
-| XSS Reflected | Low | XSS | `echo $_GET['name']` unencoded |
-| File Inclusion | Low | LFI | `include($_GET['page'])` |
-| File Upload | Low | RCE | No extension or content-type check |
-| Command Injection | Low | RCE | `shell_exec($_GET['ip'])` |
-
-> Each entry has a matching .md file in /dvwa/ with full details and fix analysis.
-
----
-
-## Background — Why Automation → Security
-
-My automation work directly transfers:
-
-| Automation SDET skill | Security application |
-|-----------------------|----------------------|
-| Selenium / Playwright scripting | Custom security tooling in Python |
-| API test frameworks | API security testing, auth bypass |
-| CI/CD pipeline (Jenkins) | Security pipeline integration (SAST/DAST) |
-| Systematic test case design | Structured pentest methodology |
-| Bug reproduction and reporting | Vulnerability writeups and PoC documentation |
-
-The mindset is the same — find where the system behaves unexpectedly. The payloads are different.
+- [ ] Strengthen practical web application security testing.
+- [ ] Develop deeper understanding of API authentication and JWT security.
+- [ ] Investigate authorization vulnerabilities and BOLA.
+- [ ] Practise source code review and vulnerability reproduction.
+- [ ] Understand automated security testing tools and their limitations.
+- [ ] Improve security research methodology and technical documentation.
 
 ---
 
 ## Contact
 
-- Email: mjangsan1@gmail.com
-- Bug bounty: 
+- Email: sangeethagm456@gmail.com
+- GitHub: https://github.com/mjangsan
 
 ---
 
-*Updated regularly as I progress. Last updated: APR-2026*
+*This repository is a continuous record of my hands-on security learning, technical investigations, and research progress.*
