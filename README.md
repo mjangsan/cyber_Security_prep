@@ -145,37 +145,66 @@ I approach security testing with the same systematic mindset used in software qu
 
 ## Repository Structure
 
-```text
-security-research/
+
+cyber_Security_prep/
 │
-├── portswigger/
-│   ├── authentication/
-│   ├── sqli/
-│   ├── xss/
-│   ├── ssrf/
-│   └── access-control/
+├── README.md
+│
+├── web-security/
+│   │
+│   ├── burp-suite/
+│   │   └── burp-basics.md
+│   │
+│   ├── dvwa/
+│   │   ├── writeups/
+│   │   │   ├── dvwa-sqli-low.md
+│   │   │   ├── dvwa-xss-low.md
+│   │   │   ├── dvwa-ssrf.md
+│   │   │   ├── dvwa-lfi-low.md
+│   │   │   └── command-injection.md
+│   │   │
+│   │   └── scripts/
+│   │       ├── DVWA_SQLi.py
+│   │       └── brute_Force.py
+│   │
+│   └── vulnerability-writeups/
+│       └── server-side-parameter-pollution.md
 │
 ├── api-security/
 │   ├── authentication/
 │   ├── jwt/
 │   ├── bola-idor/
-│   └── business-logic/
+│   └── authorization/
 │
-├── source-code-review/
-│   ├── dvwa/
-│   └── vulnerability-analysis/
+├── access-control/
+│   ├── horizontal-privilege-escalation.md
+│   └── vertical-privilege-escalation.md
+│
+├── vulnerable-applications/
+│   │
+│   ├── simulation-1/
+│   │   ├── app.php
+│   │   ├── test_sim1.py
+│   │   └── uploads/
+│   │       ├── mn.php
+│   │       └── xxe.img
+│   │
+│   └── simulation-2/
+│       ├── app.py
+│       └── test_sim2.py
+│
+├── security-tools/
+│   └── dvwa/
+│       └── bruteForce_check_Vulnerable.py
 │
 ├── research/
 │   ├── paper-notes/
 │   ├── tool-comparison/
 │   └── research-observations/
 │
-├── tools/
-│
 └── writeups/
-```
+    └── ctf/
 
----
 
 ## Current Learning Priorities
 
