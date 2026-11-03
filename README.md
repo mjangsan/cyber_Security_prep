@@ -141,7 +141,6 @@ The mindset is the same — find where the system behaves unexpectedly. The payl
 
 ## Contact
 
-- LinkedIn: https://www.linkedin.com/in/san-kawai/
 - Email: mjangsan1@gmail.com
 - Bug bounty: 
 
