@@ -1,0 +1,40 @@
+# SQL Injection — Basic Labs (Filter Bypass & Login Bypass)
+
+> Personal lab notes, cleaned up for a GitHub write-up. Testing was done against intentionally vulnerable training labs, not a live/production system.
+
+## Lab 1: Category Filter is Vulnerable to SQL Injection
+
+**Goal:** confirm the category filter is injectable, then use that to retrieve unreleased products.
+
+### Steps
+
+1. Injected `'--` into the category parameter. This returned one extra object in the response compared to the normal filter — confirming the application reacts to SQL injection.
+2. Tried the payload `' or1=1--` (no space between `or` and `1`). This caused an internal server error.
+3. Added a space between the logic condition: `' or 1=1--`. This worked — the filter returned all products, including the unreleased ones.
+
+**Takeaway:** the parser needs whitespace around keywords/operators; a missing space broke the query syntax rather than the logic.
+
+## Lab 2: SQL Injection Allowing Login Bypass
+
+**Goal:** access the admin page without valid credentials.
+
+### Steps
+
+1. The `/login` page has two fields: username and password. With no valid credentials, I tried accessing `/admin` directly — got a 404.
+2. Confirmed the login form was injectable by sending `'--` in the username field, which returned a `200 OK` from the backend (rather than an auth failure).
+3. Tried `' or '1'='1--`. The single quote got escaped by the application, so this payload failed.
+4. Tried `' or 1=1--` (numeric comparison, no quotes to escape). This succeeded and logged in directly as the administrator.
+5. Confirmed: landed on a working admin page.
+
+**Takeaway:** the app sanitized/escaped quote characters but the injected condition didn't need a quoted string comparison — using a bare numeric `1=1` sidestepped the escaping entirely.
+
+## Lessons
+
+- A small syntax detail (missing whitespace, an escaped quote) can make or break a payload — when one form fails, try an equivalent that avoids the character being filtered/escaped.
+- A `200 OK` instead of an expected error page is itself a useful signal that the input reached the query layer.
+
+## Remediation
+
+- Use parameterized queries / prepared statements instead of concatenating user input into SQL.
+- Don't rely on quote-escaping alone for sanitization — it can be bypassed with payloads that don't need quotes (e.g. `OR 1=1`).
+- Apply least-privilege DB accounts and proper authN/authZ checks server-side, independent of the login query's result.
